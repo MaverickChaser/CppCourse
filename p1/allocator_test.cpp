@@ -22,7 +22,6 @@ TEST(Allocator, AllocInRange) {
     a.free(p);
 }
 
-
 static void writeTo(Pointer &p, size_t size) {
     char *v = reinterpret_cast<char*>(p.get());
 
@@ -69,28 +68,15 @@ TEST(Allocator, AllocReadWrite) {
         ptr.push_back( a.alloc(size) );
 
         EXPECT_TRUE(isValidMemory(ptr.back(), size));
-
         writeTo(ptr.back(), size);
     }
 
     for (Pointer &p: ptr) {
-        EXPECT_TRUE(isDataOk(p, size));
+        EXPECT_TRUE(isDataOk(p, size)); 
     }
-
     for (Pointer &p: ptr) {
         a.free(p);
     }
-
-    
-    printf("SYSTEM\n");
-    for (Pointer &p : ptr) {
-        printf("%d %lld\n", p.get(), &p);
-    }
-    printf("PROGRAM\n");
-    for (int i = 1; i < a.pointers.size() - 1; i++) {
-        printf("%lld\n", a.pointers[i].p);
-    }
-
 }
 
 TEST(Allocator, AllocNoMem) {
@@ -120,12 +106,10 @@ TEST(Allocator, AllocReuse) {
     int size = 135;
 
     ASSERT_TRUE(fillUp(a, size, ptrs));
-    //a.dump();
     a.free(ptrs[1]);
-    //a.dump();
+
     EXPECT_EQ(ptrs[1].get(), nullptr);
     ptrs[1] = a.alloc(size);
-    //a.dump();
 
     EXPECT_NE(ptrs[1].get(), nullptr);
     writeTo(ptrs[1], size);
@@ -241,12 +225,12 @@ TEST(Allocator, ReallocFromEmpty) {
     
     int size = 81;
 
-    Pointer p = NULL;
+    Pointer p;
     Pointer p1 = a.alloc(size);
 
     a.realloc(p, size);
     EXPECT_NE(p.get(), nullptr);
-    printf("ok realloc");
+
     Pointer p2 = a.alloc(size);
 
     writeTo(p, size);
@@ -334,3 +318,4 @@ TEST(Allocator, ReallocGrow) {
     a.free(p);
     a.free(p2);
 }
+
