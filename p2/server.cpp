@@ -33,22 +33,8 @@ int set_nonblock(int fd)
 #endif
 } 
 
-void print_string(std::string s) 
-{
-    const int MAX_BYTES = 1024;
-    int i = 0;
-    while (s[i]) {
-        for (; s[i] && i < MAX_BYTES - 1; i++) {
-            printf("%c", s[i]);
-        }
-        printf("\n");
-    }
-}
-
 int main(int argc, char **argv)
 {
-    FILE *logs = fopen("logs", "w");
-
     int MasterSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     int optval = 1;
@@ -84,8 +70,7 @@ int main(int argc, char **argv)
         std::cout << strerror(errno) << std::endl;
         return 1;
     }
-
-
+    
     int KQueue = kqueue();
 
     struct kevent KEvent;
@@ -94,7 +79,7 @@ int main(int argc, char **argv)
     EV_SET(&KEvent, MasterSocket, EVFILT_READ, EV_ADD, 0, 0, 0);
     kevent(KQueue, &KEvent, 1, NULL, 0, NULL);
 
-    std::vector<int> clients;
+    std::set<int> clients;
     std::string tmp;
 
     while (true)
@@ -109,7 +94,7 @@ int main(int argc, char **argv)
                 int SlaveSocket = accept(MasterSocket, 0, 0);
                 set_nonblock(SlaveSocket);
                 
-                clients.push_back(SlaveSocket);
+                clients.insert(SlaveSocket);
                 fprintf(stdout, "%s\n", "accepted connection");
                 fflush(stdout);
 
@@ -125,10 +110,9 @@ int main(int argc, char **argv)
                 int RecvSize = recv(KEvent.ident, Buffer, 1024, MSG_NOSIGNAL);
                 if (RecvSize <= 0)
                 {
-                    clients.erase(find(clients.begin(), clients.end(), KEvent.ident));
-                    fprintf(stdout, "%s\n", "connection terminated");
-                    fflush(stdout);
+                    shutdown(KEvent.ident, SHUT_RDWR);
                     close(KEvent.ident);
+                    clients.erase(KEvent.ident);
                 }
                 else
                 {   
@@ -143,8 +127,6 @@ int main(int argc, char **argv)
             }
         }
     }
-
-    fclose(logs);
 
     return 0;
 }
